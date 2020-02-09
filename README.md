@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # roboclaw_ros
 [![Build Status](https://travis-ci.org/sonyccd/roboclaw_ros.svg?branch=master)](https://travis-ci.org/sonyccd/roboclaw_ros)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/6f65acd1242e4a0582ecb04c7cc70f68)](https://www.codacy.com/app/snakes-in-the-box/roboclaw_ros?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=sonyccd/roboclaw_ros&amp;utm_campaign=Badge_Grade)
@@ -65,3 +66,7 @@ Odometry output from the mobile base.
 
 #IF SOMETHING IS BROEKN:
 Please file an issue, it makes it far easier to keep track of what needs to be fixed. It also allows others that might have solved the problem to contribute.  If you are confused feel free to email me, I might have overlooked something in my readme.
+=======
+# phidgets_ros
+repo for controlling phidget motors
+>>>>>>> f84cce9c6965dbc2ec6fd61a93c15989c3a68003
