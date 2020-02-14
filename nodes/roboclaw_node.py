@@ -10,6 +10,7 @@ import tf
 from geometry_msgs.msg import Quaternion, Twist
 from nav_msgs.msg import Odometry
 import threading
+from motion_control.msg import Mobility
 
 __author__ = "bwbazemore@uga.edu (Brad Bazemore)"
 
@@ -193,7 +194,7 @@ class Node:
         self.encodm = EncoderOdom(self.TICKS_PER_METER, self.BASE_WIDTH)
         self.last_set_speed_time = rospy.get_rostime()
 
-        self.sub = rospy.Subscriber("cmd_vel", Twist, self.cmd_vel_callback, queue_size=5)
+        self.sub = rospy.Subscriber("cmd_vel", Mobility, self.cmd_vel_callback, queue_size=5)
         self.TIMEOUT = 2
 
         rospy.sleep(1)
@@ -252,30 +253,23 @@ class Node:
                 self.updater.update()
             r_time.sleep()
 
-    def cmd_vel_callback(self, twist):
+    def cmd_vel_callback(self, mobility):
         with self.lock:
             """Command the motors based on the incoming twist message"""
             now_time = rospy.get_rostime()
             dt = (now_time - self.last_set_speed_time).to_sec()
             self.last_set_speed_time = now_time
 
-            rospy.logdebug("Twist: -Linear X: %d    -Angular Z: %d", twist.linear.x, twist.angular.z)
-            linear_x = -twist.linear.x
-            angular_z = twist.angular.z
+            rospy.logdebug("Front Left: %d Front Right: %d Rear Left: %d Rear Right: %d", mobility.front_left, mobility.front_right, mobility.rear_left, mobility.rear_left)
+            # linear_x = -twist.linear.x
+            # angular_z = twist.angular.z
+            velocities = [mobility.front_left, mobility.front_right, mobility.rear_left, mobility.rear_right]
+            
+            #clamp
+            velocities = [max(-self.LINEAR_MAX_SPEED, min(x, self.LINEAR_MAX_SPEED) for x in velocities]
 
-            if linear_x > self.LINEAR_MAX_SPEED:
-                linear_x = self.LINEAR_MAX_SPEED
-            elif linear_x < -self.LINEAR_MAX_SPEED:
-                linear_x = -self.LINEAR_MAX_SPEED
-
-            # Take linear x and angular z values and compute command
-            motor1_command = linear_x/self.LINEAR_MAX_SPEED + angular_z/self.ANGULAR_MAX_SPEED
-            motor2_command = linear_x/self.LINEAR_MAX_SPEED - angular_z/self.ANGULAR_MAX_SPEED
-
-            # Scale to motor pwm
-            motor1_command = int(motor1_command * 127)
-            motor2_command = int(motor2_command * 127)
-
+            #scale to motor pwm
+            velocities = [int((x/self.LINEAR_MAX_SPEED)*127) for x in velocities]
 
             # Enforce acceleration limits
             # TODO: test this block. it has not been tested. if it doesn't work, just comment it out for now
@@ -295,26 +289,29 @@ class Node:
             #    rospy.logdebug("Motor command exceeded acceleration limits, was clipped to %d", motor2_command)
 
             # Clip commands to within bounds (-127,127)
-            motor1_command =  int(max(-127, min(127, motor1_command)))
-            motor2_command =  int(max(-127, min(127, motor2_command)))
-
-            rospy.logdebug("motor1 command = %d",int(motor1_command))
-            rospy.logdebug("motor2 command = %d",int(motor2_command))
+            #motor1_command =  int(max(-127, min(127, motor1_command)))
+            #motor2_command =  int(max(-127, min(127, motor2_command)))
+            
+            for vel in velocities:
+                rospy.logdebug("command = %d",int(vel))
 
             try:
-                if motor1_command >= 0:
-                    self.roboclaw.ForwardM1(self.frontaddr, motor1_command)
-                    self.roboclaw.ForwardM1(self.backaddr, motor1_command)
+                if(velocities[0]>=0):
+                    self.roboclaw.ForwardM1(self.frontaddr, velocities[0])
                 else:
-                    self.roboclaw.BackwardM1(self.frontaddr, -motor1_command)
-                    self.roboclaw.BackwardM1(self.backaddr, -motor1_command)
-
-                if motor2_command >= 0:
-                    self.roboclaw.ForwardM2(self.frontaddr, motor2_command)
-                    self.roboclaw.ForwardM2(self.backaddr, motor2_command)
+                    self.roboclaw.BackwardM1(self.frontaddr, -velocities[1])
+                if(velocities[1]>=0):
+                    self.roboclaw.ForwardM1(self.frontaddr, velocities[0])
                 else:
-                    self.roboclaw.BackwardM2(self.frontaddr, -motor2_command)
-                    self.roboclaw.BackwardM2(self.backaddr, -motor2_command)
+                    self.roboclaw.BackwardM1(self.frontaddr, -velocities[1])
+                if(velocities[1]>=0):
+                    self.roboclaw.ForwardM1(self.backaddr, velocities[0])
+                else:
+                    self.roboclaw.BackwardM1(self.backaddr, -velocities[1])
+                if(velocities[1]>=0):
+                    self.roboclaw.ForwardM1(self.backaddr, velocities[0])
+                else:
+                    self.roboclaw.BackwardM1(self.backaddr, -velocities[1]) 
 
             except OSError as e:
                 rospy.logwarn("Roboclaw OSError: %d", e.errno)

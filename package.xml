@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>roboclaw_serial_ros</name>
+  <name>phidgets_ros</name>
   <version>0.0.1</version>
   <description>Node for roboclaw</description>
 
