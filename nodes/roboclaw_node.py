@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 from __future__ import division
 from math import pi, cos, sin
+import sys
 
 import diagnostic_msgs
 import diagnostic_updater
+sys.path.insert(1, '/home/usr2020/usr_ws/src/phidgets_ros/src')
 from roboclaw_driver.roboclaw_driver import Roboclaw
 import rospy
 import tf
@@ -266,7 +268,7 @@ class Node:
             velocities = [mobility.front_left, mobility.front_right, mobility.rear_left, mobility.rear_right]
             
             #clamp
-            velocities = [max(-self.LINEAR_MAX_SPEED, min(x, self.LINEAR_MAX_SPEED) for x in velocities]
+            velocities = [max(-self.LINEAR_MAX_SPEED, min(x, self.LINEAR_MAX_SPEED)) for x in velocities]
 
             #scale to motor pwm
             velocities = [int((x/self.LINEAR_MAX_SPEED)*127) for x in velocities]
@@ -292,33 +294,39 @@ class Node:
             #motor1_command =  int(max(-127, min(127, motor1_command)))
             #motor2_command =  int(max(-127, min(127, motor2_command)))
             
-            for vel in velocities:
-                rospy.logdebug("command = %d",int(vel))
+            rospy.loginfo("%d, %d, %d, %d",int(velocities[0]),int(velocities[1]),int(velocities[2]),int(velocities[3]))
 
             try:
                 if(velocities[0]>=0):
+		    rospy.loginfo("setting front left wheel to " + str(velocities[0]))
                     self.roboclaw.ForwardM1(self.frontaddr, velocities[0])
                 else:
-                    self.roboclaw.BackwardM1(self.frontaddr, -velocities[1])
+                    self.roboclaw.BackwardM1(self.frontaddr, (-velocities[0]))
+
                 if(velocities[1]>=0):
-                    self.roboclaw.ForwardM1(self.frontaddr, velocities[0])
+		    rospy.loginfo("setting front right wheel to " + str(velocities[1]))
+                    self.roboclaw.ForwardM2(self.frontaddr, velocities[1])
                 else:
-                    self.roboclaw.BackwardM1(self.frontaddr, -velocities[1])
-                if(velocities[1]>=0):
-                    self.roboclaw.ForwardM1(self.backaddr, velocities[0])
+                    self.roboclaw.BackwardM2(self.frontaddr, -velocities[1])
+
+                if(velocities[2]>=0):
+		    rospy.loginfo("setting back left wheel to " + str(velocities[2]))
+                    self.roboclaw.ForwardM1(self.backaddr, velocities[2])
                 else:
-                    self.roboclaw.BackwardM1(self.backaddr, -velocities[1])
-                if(velocities[1]>=0):
-                    self.roboclaw.ForwardM1(self.backaddr, velocities[0])
+                    self.roboclaw.BackwardM1(self.backaddr, -velocities[2])
+
+                if(velocities[3]>=0):
+		    rospy.loginfo("setting back right wheel to " + str(velocities[3]))
+                    self.roboclaw.ForwardM2(self.backaddr, velocities[3])
                 else:
-                    self.roboclaw.BackwardM1(self.backaddr, -velocities[1]) 
+                    self.roboclaw.BackwardM2(self.backaddr, -velocities[3]) 
 
             except OSError as e:
                 rospy.logwarn("Roboclaw OSError: %d", e.errno)
                 rospy.logdebug(e)
 
-            self.last_motor1_command = motor1_command
-            self.last_motor2_command = motor2_command
+            #self.last_motor1_command = motor1_command
+            #self.last_motor2_command = motor2_command
 
 
     def check_vitals(self, stat):
