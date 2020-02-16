@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="dev" default="/dev/roboclaw"/>
+    <arg name="dev" default="/dev/ROBOCLAW"/>
     <arg name="baud" default="115200"/>
     <arg name="frontaddr" default="128"/>
     <arg name="backaddr" default="129"/>
