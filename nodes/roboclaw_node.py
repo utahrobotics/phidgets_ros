@@ -196,7 +196,7 @@ class Node:
         self.encodm = EncoderOdom(self.TICKS_PER_METER, self.BASE_WIDTH)
         self.last_set_speed_time = rospy.get_rostime()
 
-        self.sub = rospy.Subscriber("cmd_vel", Mobility, self.cmd_vel_callback, queue_size=5)
+        self.sub = rospy.Subscriber("motor_vel", Mobility, self.cmd_vel_callback, queue_size=5)
         self.TIMEOUT = 2
 
         rospy.sleep(1)
